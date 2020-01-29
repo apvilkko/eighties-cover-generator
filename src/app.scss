@@ -1,0 +1,36 @@
+body {
+  font-size: 20px;
+  font-family: "Questrial", sans-serif;
+  padding: 1rem;
+}
+
+input,
+button {
+  font-size: inherit;
+  font-family: "Questrial", sans-serif;
+}
+
+label {
+  text-transform: capitalize;
+}
+
+.inputs {
+  display: flex;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  width: 20rem;
+  margin-bottom: 1rem;
+
+  margin-right: 1rem;
+}
+
+input[type="text"] {
+  padding: 0.5em;
+}
+
+.canvas {
+  display: block;
+}
