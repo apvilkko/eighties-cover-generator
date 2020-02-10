@@ -16,6 +16,7 @@ label {
 
 .inputs {
   display: flex;
+  flex-wrap: wrap;
 }
 
 .form-group {
@@ -33,4 +34,13 @@ input[type="text"] {
 
 .canvas {
   display: block;
+}
+
+.artist-container,
+.title-container {
+  position: absolute;
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  text-align: center;
 }

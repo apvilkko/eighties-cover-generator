@@ -24,6 +24,7 @@ const Cover = ({ data }) => {
   const [specs, setSpecs] = useState({
     bg: 1
   });
+  const [image, setImage] = useState(null);
   const [texts, setTexts] = useState({
     artist: {
       family: 2,
@@ -49,7 +50,7 @@ const Cover = ({ data }) => {
 
   useLayoutEffect(() => {
     const updateSize = () => {
-      setDim(Math.min(getViewWidth(), getViewHeight()));
+      setDim(Math.min(getViewWidth(), getViewHeight() * 0.8));
     };
     window.addEventListener("resize", updateSize);
     updateSize();
@@ -57,16 +58,44 @@ const Cover = ({ data }) => {
   }, []);
 
   useEffect(() => {
+    const listener = function(event) {
+      const items = (event.clipboardData || event.originalEvent.clipboardData)
+        .items;
+      let index;
+      for (index in items) {
+        const item = items[index];
+        if (item.kind === "file") {
+          const blob = item.getAsFile();
+          const reader = new FileReader();
+          reader.onload = function(event) {
+            const result = event.target.result;
+            if (result.startsWith("data:image")) {
+              setImage(result);
+            }
+          };
+          reader.readAsDataURL(blob);
+        }
+      }
+    };
+    document.addEventListener("paste", listener);
+    return () => {
+      document.removeEventListener("paste", listener);
+    };
+  }, []);
+
+  useEffect(() => {
     const obj = {};
     const scale = dim / 100;
     Object.keys(data).forEach(field => {
       const spec = texts[field];
+      if (!spec) {
+        return;
+      }
       const shadowSize = spec.size * scale * 0.1;
       const shadowColor = COLORS[spec.shadow] || "black";
       const style = {
-        position: "absolute",
         top: `${scale * spec.y}px`,
-        left: spec.x === "center" ? "20%" : `${scale * spec.x}px`,
+        left: 0,
         fontFamily: FONTS[spec.family].family,
         fontSize: `${spec.size * scale}px`,
         color: COLORS[spec.color] || "#777",
@@ -76,7 +105,7 @@ const Cover = ({ data }) => {
           : "none",
         letterSpacing: `${spec.letterSpacing * scale}px`,
         WebkitTextStroke: spec.stroke
-          ? `${spec.size / (scale * 0.4)}px ${COLORS[spec.stroke]}`
+          ? `${spec.size * scale * 0.05}px ${COLORS[spec.stroke]}`
           : "initial"
       };
       obj[field] = style;
@@ -84,7 +113,36 @@ const Cover = ({ data }) => {
     setStyles(obj);
   }, [dim, data, texts]);
 
-  const bgImageSrc = `images/bg${specs.bg}.jpg`;
+  const bgImageSrc = image || `images/bg${specs.bg}.jpg`;
+  const bgStyle = {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    height: dim,
+    width: dim,
+    zIndex: 1,
+    backgroundImage: `url(${bgImageSrc})`,
+    backgroundSize: "cover",
+    filter: "blur(1px) contrast(70%) brightness(70%)"
+  };
+  const bgRepeats = 3;
+  const bgEls = Array.from({ length: bgRepeats }).map((_, index) => {
+    const scaling = (index * dim) / 10;
+    const dimScale = dim - scaling;
+    return (
+      <div
+        key={index}
+        className={`background-${index}`}
+        style={{
+          ...bgStyle,
+          height: dimScale,
+          width: dimScale,
+          left: index === 0 ? 0 : scaling / 2,
+          top: index === 0 ? 0 : scaling / 2
+        }}
+      />
+    );
+  });
 
   return (
     <div
@@ -92,22 +150,11 @@ const Cover = ({ data }) => {
       ref={canvasRef}
       style={{
         width: dim,
-        height: dim
+        height: dim,
+        position: "relative"
       }}
     >
-      <div
-        className="background"
-        style={{
-          position: "absolute",
-          left: 0,
-          right: 0,
-          height: dim,
-          width: dim,
-          zIndex: 1,
-          backgroundImage: `url(${bgImageSrc})`,
-          filter: "blur(1px) contrast(70%) brightness(70%)"
-        }}
-      />
+      {bgEls}
       <div
         className="content"
         style={{
@@ -119,8 +166,12 @@ const Cover = ({ data }) => {
           zIndex: 2
         }}
       >
-        <div style={styles.artist}>{data.artist}</div>
-        <div style={styles.title}>{data.title}</div>
+        <div className="artist-container" style={styles.artist}>
+          <div>{data.artist}</div>
+        </div>
+        <div className="title-container" style={styles.title}>
+          <div>{data.title}</div>
+        </div>
       </div>
     </div>
   );
